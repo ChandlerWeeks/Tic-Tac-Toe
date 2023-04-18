@@ -1,0 +1,29 @@
+// Info for tictactoe for Systems programming
+
+// Board
+/*
+struct seg
+{
+    int turn;
+    short board[3][3];
+};
+
+x = 1
+  = 0
+O = -1
+
+win
+block
+random
+
+4444 semaphore size 2 - Player 1 and player 2
+Start:             Available    In Use
+8888 shared memory
+use bob to synchronize
+
+ttt -1 &
+ttt -2
+
+ttt -2 &
+ttt -1
+*/
