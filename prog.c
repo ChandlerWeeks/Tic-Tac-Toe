@@ -296,9 +296,10 @@ int main(int argc, char *argv[])
     }
     player = atoi(argv[1]);
 
-    if (player != -1 || player != -2) {
-        checkError(-1, "Player Number");
-    }
+    if (player != 1 && player != 2) {
+    checkError(-1, "Player Number");
+}
+
 
     if (player == 1) {
         player1_setup();
