@@ -300,7 +300,6 @@ int main(int argc, char *argv[])
     checkError(-1, "Player Number");
 }
 
-
     if (player == 1) {
         player1_setup();
     } 
