@@ -159,6 +159,7 @@ void player1_setup() {
     close(fd);
 
     // enter gameplay loop
+    player1_loop(boardPtr, sem);
 
     // open fifo for write, and close it for cleanup
     fd = open("xoSync", O_WRONLY);
@@ -192,7 +193,7 @@ void player2_setup() {
     struct board* boardPtr = checkError(shmat(shm, NULL, 0), "shmat");
 
     // Enter game play loop
-
+    player2_loop(boardPtr, sem);
 
     // open fifo for read, close the fifo
     fd = open("xoSync", O_RDONLY);
@@ -201,11 +202,83 @@ void player2_setup() {
     shmdt(boardPtr);
 }
 
-void player1_loop()
-{
-  
+int isGameOver(struct board *data) {
+    int i, j;
+    int sum;
+
+    // Check rows
+    for (i = 0; i < 3; i++) {
+        sum = 0;
+        for (j = 0; j < 3; j++) {
+            sum += data->board[i][j];
+        }
+        if (sum == 3) return 1;
+        if (sum == -3) return -1;
+    }
+
+    // Check columns
+    for (i = 0; i < 3; i++) {
+        sum = 0;
+        for (j = 0; j < 3; j++) {
+            sum += data->board[j][i];
+        }
+        if (sum == 3) return 1;
+        if (sum == -3) return -1;
+    }
+
+    // Check diagonals
+    sum = data->board[0][0] + data->board[1][1] + data->board[2][2];
+    if (sum == 3) return 1;
+    if (sum == -3) return -1;
+
+    sum = data->board[0][2] + data->board[1][1] + data->board[2][0];
+    if (sum == 3) return 1;
+    if (sum == -3) return -1;
+
+    // Check for a draw
+    int emptyCells = 0;
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++) {
+            if (data->board[i][j] == 0) emptyCells++;
+        }
+    }
+
+    if (emptyCells == 0) return 2;
+
+    return 0;
 }
 
+void player1_loop(struct board *boardPtr, int sem) {
+    int gameOver = 0;
+
+    while (!gameOver) {
+        reserveSem(sem, 0);
+        makeMove(boardPtr, 1);
+        boardPtr->turn++;
+        displayBoard(boardPtr);
+        gameOver = isGameOver(boardPtr);
+        if (gameOver) {
+            printf("Player 1 wins!\n");
+        }
+        releaseSem(sem, 1);
+    }
+}
+
+void player2_loop(struct board *boardPtr, int sem)
+{
+    int gameOver = 0;
+    while (!gameOver) {
+        reserveSem(sem, 1);
+        makeMove(boardPtr, -1);
+        boardPtr->turn++;
+        displayBoard(boardPtr);
+        gameOver = isGameOver(boardPtr);
+        if (gameOver) {
+            printf("Player 2 wins!\n");
+        }
+        releaseSem(sem, 0);
+    }
+}
 
 int main(int argc, char *argv[])
 {
@@ -224,6 +297,16 @@ int main(int argc, char *argv[])
     player = atoi(argv[1]);
 
     if (player != -1 || player != -2) {
+        checkError(-1, "Player Number");
+    }
+
+    if (player == 1) {
+        player1_setup();
+    } 
+    else if (player == 2) {
+        player2_setup();
+    } 
+    else {
         checkError(-1, "Player Number");
     }
 
