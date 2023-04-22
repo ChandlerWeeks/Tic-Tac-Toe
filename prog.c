@@ -1,3 +1,9 @@
+/*
+Program 10 Submission for -
+    Jason Weeks - JCW1044
+    Andrew McBride - ahm228
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -7,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/ipc.h>
 #include <sys/types.h>
+#include <sys/shm.h>
 #include <time.h>
 
 union semun
@@ -120,6 +127,7 @@ int releaseSem(int semId, int semNum)
 // some setup for player 1
 void player1_setup() {
     int rand1, rand2, shm, sem, fd; // random values storage, shm and semaphore storage
+    struct board* boardPtr;
     // attempt to create a FIFO named xoSync
     checkError(mkfifo("xoSync", S_IRWXU), "mkfifo");
 
@@ -132,11 +140,11 @@ void player1_setup() {
     key_t semKey = ftok("xoSync", rand2);
 
     // use the keys as projection values for shared memory/semaphores
-    shm = checkError(shmget(shmKey, sizeof(struct board), IPC_CREAT | 8888), "shmget");
-    sem = checkError(semget(semKey, 2, IPC_CREAT | 4444), "semget");
+    shm = checkError(shmget(shmKey, sizeof(struct board), IPC_CREAT | 0666), "shmget");
+    sem = checkError(semget(semKey, 2, IPC_CREAT | 0666), "semget");
 
     // shared memory of board struct
-    struct board* boardPtr = checkError(shmat(shm, NULL, 0), "shmat");
+    boardPtr = (struct board *)shmat(shm, NULL, 0);
 
     // initialize the semaphores in the set
     initSemAvailable(sem, 0); // player 1 semaphore
@@ -174,6 +182,7 @@ void player1_setup() {
 
 void player2_setup() {
     int rand1, rand2, fd, shm, sem;
+    struct board* boardPtr;
 
     // open and read two random integers from the FIFO, and close the fifo
     fd = checkError(open("xoSync", O_RDONLY), "open");
@@ -186,11 +195,11 @@ void player2_setup() {
     key_t semKey = ftok("xoSync", rand2);
 
     // retreieve shared memory and semaphore
-    shm = checkError(shmget(shmKey, sizeof(struct board), 8888), "shmget");
-    sem = checkError(semget(semKey, 2, 4444), "semget");
+    shm = checkError(shmget(shmKey, sizeof(struct board), 0666), "shmget");
+    sem = checkError(semget(semKey, 2, 0666), "semget");
 
     // attack shared memory
-    struct board* boardPtr = checkError(shmat(shm, NULL, 0), "shmat");
+    boardPtr = (struct board *)shmat(shm, NULL, 0);
 
     // Enter game play loop
     player2_loop(boardPtr, sem);
