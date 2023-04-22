@@ -262,9 +262,9 @@ void player1_loop(struct board *boardPtr, int sem) {
 
     while (!gameOver) {
         reserveSem(sem, 0);
+        displayBoard(boardPtr);
         makeMove(boardPtr, 1);
         boardPtr->turn++;
-        displayBoard(boardPtr);
         gameOver = isGameOver(boardPtr);
         if (gameOver) {
             printf("Player 1 wins!\n");
@@ -278,9 +278,9 @@ void player2_loop(struct board *boardPtr, int sem)
     int gameOver = 0;
     while (!gameOver) {
         reserveSem(sem, 1);
+        displayBoard(boardPtr);
         makeMove(boardPtr, -1);
         boardPtr->turn++;
-        displayBoard(boardPtr);
         gameOver = isGameOver(boardPtr);
         if (gameOver) {
             printf("Player 2 wins!\n");
