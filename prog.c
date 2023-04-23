@@ -145,6 +145,10 @@ void player1_setup() {
 
     // shared memory of board struct
     boardPtr = (struct board *)shmat(shm, NULL, 0);
+    if (boardPtr == (void *)-1) {
+    perror("shmat");
+    exit(EXIT_FAILURE);
+}
 
     // initialize the semaphores in the set
     initSemAvailable(sem, 0); // player 1 semaphore
@@ -286,7 +290,7 @@ void player1_loop(struct board *boardPtr, int sem) {
 
 void player2_loop(struct board *boardPtr, int sem)
 {
-    while (true) {
+    while (1) {
     reserveSem(sem, 1);
     displayBoard(boardPtr);
     if (boardPtr->turn == -1) {
