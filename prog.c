@@ -260,7 +260,7 @@ int isGameOver(struct board *data) {
 int noMorePlaysExist(struct board* boardPtr) {
     for (int row = 0; row < 3; row++) {
         for (int col = 0; col < 3; col++) {
-            if (boardPtr->state[row][col] == 0) {
+            if (boardPtr->board[row][col] == 0) {
                 return 0; // There is an empty cell, so there are more moves
             }
         }
@@ -276,7 +276,7 @@ void player1_loop(struct board *boardPtr, int sem) {
     displayBoard(boardPtr);
     makeMove(boardPtr, 1);
     displayBoard(boardPtr);
-    if (isGameOver(boardPtr) || noMorePlaysExist(boardPtr)) { //check this out
+    if (isGameOver(boardPtr) || noMorePlaysExist(boardPtr)) {
         boardPtr->turn = -1;
     }
     releaseSem(sem, 1);
