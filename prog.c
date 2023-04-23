@@ -148,7 +148,7 @@ void player1_setup() {
     if (boardPtr == (void *)-1) {
     perror("shmat");
     exit(EXIT_FAILURE);
-}
+  }
 
     // initialize the semaphores in the set
     initSemAvailable(sem, 0); // player 1 semaphore
