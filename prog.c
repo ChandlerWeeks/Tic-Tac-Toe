@@ -145,6 +145,10 @@ void player1_setup() {
 
     // shared memory of board struct
     boardPtr = (struct board *)shmat(shm, NULL, 0);
+    if (boardPtr == (void *)-1) {
+    perror("shmat");
+    exit(EXIT_FAILURE);
+  }
 
     // initialize the semaphores in the set
     initSemAvailable(sem, 0); // player 1 semaphore
@@ -257,36 +261,47 @@ int isGameOver(struct board *data) {
     return 0;
 }
 
-void player1_loop(struct board *boardPtr, int sem) {
-    int gameOver = 0;
-
-    while (!gameOver) {
-        reserveSem(sem, 0);
-        makeMove(boardPtr, 1);
-        boardPtr->turn++;
-        displayBoard(boardPtr);
-        gameOver = isGameOver(boardPtr);
-        if (gameOver) {
-            printf("Player 1 wins!\n");
+int noMorePlaysExist(struct board* boardPtr) {
+    for (int row = 0; row < 3; row++) {
+        for (int col = 0; col < 3; col++) {
+            if (boardPtr->board[row][col] == 0) {
+                return 0; // There is an empty cell, so there are more moves
+            }
         }
-        releaseSem(sem, 1);
     }
+    return 1; // All cells are filled, so there are no more moves
+}
+
+
+void player1_loop(struct board *boardPtr, int sem) {
+
+    while (boardPtr->turn > -1) {
+    reserveSem(sem, 0);
+    displayBoard(boardPtr);
+    makeMove(boardPtr, 1);
+    displayBoard(boardPtr);
+    if (isGameOver(boardPtr) || noMorePlaysExist(boardPtr)) {
+        boardPtr->turn = -1;
+    }
+    releaseSem(sem, 1);
+    }
+
 }
 
 void player2_loop(struct board *boardPtr, int sem)
 {
-    int gameOver = 0;
-    while (!gameOver) {
-        reserveSem(sem, 1);
-        makeMove(boardPtr, -1);
-        boardPtr->turn++;
-        displayBoard(boardPtr);
-        gameOver = isGameOver(boardPtr);
-        if (gameOver) {
-            printf("Player 2 wins!\n");
-        }
-        releaseSem(sem, 0);
+    while (1) {
+    reserveSem(sem, 1);
+    displayBoard(boardPtr);
+    if (boardPtr->turn == -1) {
+        break;
     }
+    makeMove(boardPtr, 2);
+    displayBoard(boardPtr);
+    boardPtr->turn++;
+    releaseSem(sem, 0);
+    }
+
 }
 
 int main(int argc, char *argv[])
