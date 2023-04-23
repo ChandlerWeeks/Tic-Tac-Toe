@@ -15,6 +15,7 @@ Program 10 Submission for -
 #include <sys/types.h>
 #include <sys/shm.h>
 #include <time.h>
+#include <string.h>
 
 union semun
 {
@@ -64,6 +65,7 @@ void makeMove(struct board *data, int player) {
     data->board[row][col] = player;
 }
 
+// check for error in systems calls
 int checkError(int val, char *msg)
 {
     if (val == -1)
@@ -215,6 +217,7 @@ void player2_setup() {
     shmdt(boardPtr);
 }
 
+// check if the game is over via draw, or winner. returns who won
 int isGameOver(struct board *data) {
     int i, j;
     int sum;
@@ -256,9 +259,9 @@ int isGameOver(struct board *data) {
         }
     }
 
-    if (emptyCells == 0) return 2;
+    if (emptyCells == 0) return 2; // game is drawn
 
-    return 0;
+    return 0; // game is still going
 }
 
 int noMorePlaysExist(struct board* boardPtr) {
@@ -274,34 +277,72 @@ int noMorePlaysExist(struct board* boardPtr) {
 
 
 void player1_loop(struct board *boardPtr, int sem) {
+    int winner;
+    char buff[1024];
 
+    // game loop
     while (boardPtr->turn > -1) {
-    reserveSem(sem, 0);
-    displayBoard(boardPtr);
-    makeMove(boardPtr, 1);
-    displayBoard(boardPtr);
-    if (isGameOver(boardPtr) || noMorePlaysExist(boardPtr)) {
-        boardPtr->turn = -1;
-    }
-    releaseSem(sem, 1);
+        reserveSem(sem, 0); // reserve p1 semaphore
+        displayBoard(boardPtr); // display state of board
+        if (winner = isGameOver(boardPtr) != 0) { // check for win / no more plays
+            boardPtr->turn = -1;
+        }
+        makeMove(boardPtr, 1); // make our move
+        displayBoard(boardPtr); // display board
+        if (winner = isGameOver(boardPtr) != 0) { // check for win / no more plays
+            boardPtr->turn = -1;
+        }
+        releaseSem(sem, 1); // release p2's semaphore
     }
 
+    // output who won
+    if (winner == 1)
+    {
+        sprintf(buff, "Player 1 wins!\n");
+    }
+    else if (winner == -1)
+    {
+        sprintf(buff, "Player 2 wins!\n");
+    }
+    else if (winner == 2)
+    {
+        sprintf(buff, "game ended in a draw");
+    }
+    write(STDOUT_FILENO, buff, strlen(buff));
 }
 
 void player2_loop(struct board *boardPtr, int sem)
 {
-    while (1) {
-    reserveSem(sem, 1);
-    displayBoard(boardPtr);
-    if (boardPtr->turn == -1) {
-        break;
-    }
-    makeMove(boardPtr, 2);
-    displayBoard(boardPtr);
-    boardPtr->turn++;
-    releaseSem(sem, 0);
-    }
+    int winner;
+    char buff[1024];
 
+    // while true loop
+    while (1) {
+        reserveSem(sem, 1); // reserve p2s semaphore
+        displayBoard(boardPtr); // display board
+        if (boardPtr->turn == -1) {
+                winner = isGameOver(boardPtr);
+                break;
+            }
+        makeMove(boardPtr, -1); // make a move
+        displayBoard(boardPtr); // display board status
+        boardPtr->turn++; // increment turn counter
+        releaseSem(sem, 0); // release p1's semaphore
+    }
+    // output who won
+    if (winner == 1)
+    {
+        sprintf(buff, "Player 1 wins!\n");
+    }
+    else if (winner == -1)
+    {
+        sprintf(buff, "Player 2 wins!\n");
+    }
+    else if (winner == 2)
+    {
+        sprintf(buff, "game ended in a draw");
+    }
+    write(STDOUT_FILENO, buff, strlen(buff));
 }
 
 int main(int argc, char *argv[])
@@ -323,7 +364,7 @@ int main(int argc, char *argv[])
     if (player != 1 && player != 2) {
     checkError(-1, "Player Number");
 }
-
+    // handle player setup and start loop in the setup
     if (player == 1) {
         player1_setup();
     } 
@@ -334,5 +375,6 @@ int main(int argc, char *argv[])
         checkError(-1, "Player Number");
     }
 
+    // exit program, successful run
     exit(EXIT_SUCCESS);
 }
